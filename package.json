@@ -2,7 +2,9 @@
   "name": "j-light-store",
   "version": "1.0.0",
   "description": "ultralight store combined with lit-html for rendering",
-  "main": "dist/index.js",
+  "bin": "lib/index.d.ts",
+  "main": "lib/index.d.ts",
+  "source": "lib/index.d.ts",
   "scripts": {
     "start": "tsc",
     "test": "jest --silent",
@@ -12,8 +14,9 @@
     "type": "git",
     "url": "https://github.com/Jaysolutely/j-light-store.git"
   },
-  "author": "jay",
-  "license": "ISC",
+  "author": "Julius Rahaus <j.rahaus@online.de>",
+  "license": "MIT",
+  "files": ["lib/**"],
   "devDependencies": {
     "@types/jest": "^27.0.2",
     "@typescript-eslint/eslint-plugin": "^4.28.0",
