@@ -1,4 +1,4 @@
-import { Store, initializeStore, StoreOptions } from "../src";
+import { Store, StoreOptions } from "../src";
 import { render, TemplateResult } from "lit-html";
 import { app } from "./app";
 
@@ -7,9 +7,7 @@ const options: StoreOptions = {
 };
 
 document.addEventListener("DOMContentLoaded", () => {
-  initializeStore((store: Store): void => {
-    render(app(store), document.body);
-  }, options);
+  new Store((store) => render(app(store), document.body), options);
 });
 
 export type component = (store: Store) => TemplateResult;

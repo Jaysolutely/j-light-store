@@ -124,7 +124,3 @@ export class Store {
     };
   }
 }
-
-export function initializeStore(render: render, options: StoreOptions): Store {
-  return new Store(render, options);
-}
