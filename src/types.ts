@@ -5,7 +5,7 @@ export interface StoreOptions {
 }
 export type StoreState = Record<string, unknown>;
 export type subscription = (store: Store) => void;
-export type dispatchCallback<CS = unknown> = (state: CS) => void;
+export type dispatchCallback<CS = unknown> = (state?: CS) => void;
 export type reducer<CA =  unknown, CS = unknown> = (
   action: CA,
   state: CS
