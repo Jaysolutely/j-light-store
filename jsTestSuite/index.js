@@ -5,7 +5,7 @@ function reducer(_, state) {
   return state + 1;
 };
 
-const store = new Store({development: true});
+const store = new Store();
 
 function counter() {
     const [value, dispatch] = store.useReducer("counter", reducer, 0);

@@ -9,7 +9,8 @@
     "start": "tsc",
     "test": "jest --silent",
     "suite": "parcel serve ./testSuite/index.html",
-    "jssuite": "parcel serve ./jsTestSuite/index.html"
+    "jssuite": "parcel serve ./jsTestSuite/index.html",
+    "mkmd": "sed '/INSERT_HERE/ r jsTestSuite/index.js' README_skeleton.md | sed '/INSERT_HERE/,+3d' > README.md"
   },
   "repository": {
     "type": "git",
