@@ -1,7 +1,7 @@
 import {
   StoreState,
   reducer,
-  render,
+  subscription,
   StoreOptions,
   dispatchCallback,
   Action,
@@ -13,16 +13,13 @@ export class Store {
   private _currentStoreState: StoreState = {};
   private _pendingStoreState: StoreState = {};
   private _reducers: Record<string, reducer> = {};
-  private _render: render;
+  private _subscriptions: subscription[] = [];
   private _options: StoreOptions;
   private _callbackQueue: [string, dispatchCallback][] = [];
   private _delayed = false;
 
-  constructor(render: render, options: StoreOptions = {}) {
-    if (!render) throw Error("No render method specified");
-    this._render = render;
+  constructor(options: StoreOptions = {}) {
     this._options = options;
-    this._refresh();
   }
 
   public get storeState(): StoreState {
@@ -35,13 +32,18 @@ export class Store {
     return this._options;
   }
 
+  public subscribe(subscription: subscription) {
+    if (!subscription) throw Error("No subscription provided method specified");
+    this._subscriptions.push(subscription);
+  }
+
   private _refresh(): void {
     if (this._options.development) console.log("REFRESHING");
     this._currentStoreState = this._pendingStoreState;
     try {
-      this._render(this);
+      this._subscriptions.forEach((subscription) => subscription(this));
     } catch (err) {
-      console.log("Ignored error while rendering");
+      console.log("Ignored error while executing subscriptions");
       if (this._options.development) console.error(err);
     }
     while (this._callbackQueue.length > 0) {
@@ -122,5 +124,8 @@ export class Store {
     ): void => {
       this.dispatch<CS>(action as Action, name || defaultName, callback);
     };
+  }
+  public refresh() {
+    this._refresh();
   }
 }

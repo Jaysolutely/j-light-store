@@ -12,7 +12,7 @@ interface ActionDefault extends Action {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any
 }
-export type render = (store: Store) => void;
+export type subscription = (store: Store) => void;
 export type dispatchCallback<CS = state> = (state: CS) => void;
 export type reducer<CA extends Action = ActionDefault, CS = state> = (
   action: CA,
