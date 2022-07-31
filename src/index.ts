@@ -5,6 +5,6 @@ export {
   StoreState,
   Action,
   dispatchCallback,
-  render,
+  subscription,
   extendedDispatch,
 } from "./types";
