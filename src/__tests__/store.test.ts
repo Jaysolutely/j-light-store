@@ -31,7 +31,7 @@ const myReducer: reducer<CounterAction, CounterState> = (action, state) => {
 
 describe("Basic store tests", () => {
   it("The storeState is set up", () => {
-    const myStore = new Store( options);
+    const myStore = new Store(options);
     expect(myStore.storeState).toEqual({});
   });
   const myStore = new Store(options);
