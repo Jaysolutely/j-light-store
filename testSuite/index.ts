@@ -6,10 +6,8 @@ const options: StoreOptions = {
   development: true,
 };
 
-document.addEventListener("DOMContentLoaded", () => {
-  const store = new Store(options);
-  store.subscribe((storeData) => render(app(storeData), document.body));
-  store.refresh();
-});
+const store = new Store(options);
+store.subscribe((storeData) => render(app(storeData), document.body));
+store.refresh();
 
 export type component = (store: Store) => TemplateResult;
