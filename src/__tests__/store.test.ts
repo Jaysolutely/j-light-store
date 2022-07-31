@@ -1,4 +1,4 @@
-import { Action, reducer, Store, StoreOptions } from "../index";
+import { reducer, Store, StoreOptions } from "../index";
 
 const options: StoreOptions = {
   development: true,
@@ -7,7 +7,7 @@ const options: StoreOptions = {
 interface CounterState {
   value: number;
 }
-interface CounterAction extends Action {
+interface CounterAction {
   type: "inc" | "dec";
   value: number;
 }
@@ -31,14 +31,14 @@ const myReducer: reducer<CounterAction, CounterState> = (action, state) => {
 
 describe("Basic store tests", () => {
   it("The storeState is set up", () => {
-    const myStore = new Store(() => undefined, options);
+    const myStore = new Store( options);
     expect(myStore.storeState).toEqual({});
   });
-  const myStore = new Store(() => undefined, options);
+  const myStore = new Store(options);
   const [state, dispatch] = myStore.useReducer<CounterAction, CounterState>(
     "counter",
-    { value: 0 },
-    myReducer
+    myReducer,
+    { value: 0 }
   );
   it("Registering substores works", () => {
     expect(state.value).toEqual(0);
@@ -71,11 +71,12 @@ describe("Store ignores error throwing render methods", () => {
       if (cnt % 2 === 0) throw Error("Random error");
     };
   };
-  const myStore = new Store(getRender(), options);
+  const myStore = new Store(options);
+  myStore.subscribe(getRender())
   const [, dispatch] = myStore.useReducer<CounterAction, CounterState>(
     "counter",
-    { value: 0 },
-    myReducer
+    myReducer,
+    { value: 0 }
   );
   it("first dispatch", () =>
     expect(
@@ -104,18 +105,14 @@ describe("Store ignores error throwing render methods", () => {
 });
 
 describe("Store handles error throwing reducers", () => {
-  const myStore = new Store(() => undefined, options);
-  const myErrorReducer: reducer<CounterAction, CounterState> = (
-    action,
-    state
-  ) => {
+  const myStore = new Store(options);
+  const myErrorReducer: reducer<CounterAction, CounterState> = () => {
     throw Error("Error in reducer");
-    return state;
   };
   const [, dispatch] = myStore.useReducer<CounterAction, CounterState>(
     "counter",
-    { value: 0 },
-    myErrorReducer
+    myErrorReducer,
+    { value: 0 }
   );
   it("error inducing dispatch call", () =>
     expect(
