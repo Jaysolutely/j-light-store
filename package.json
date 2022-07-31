@@ -1,7 +1,7 @@
 {
   "name": "j-light-store",
   "version": "2.0.0",
-  "description": "ultralight store combined with lit-html for rendering",
+  "description": "ultralight store",
   "bin": "lib/index.js",
   "main": "lib/index.js",
   "source": "lib/index.js",
@@ -20,7 +20,9 @@
   "author": "Julius Rahaus <j.rahaus@online.de>",
   "license": "MIT",
   "files": [
-    "lib/**"
+    "lib/**",
+    "LICENSE",
+    "README"
   ],
   "devDependencies": {
     "@types/jest": "^28.1.6",
