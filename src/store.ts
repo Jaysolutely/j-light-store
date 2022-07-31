@@ -15,7 +15,7 @@ export class Store {
   private _options: StoreOptions;
   private _callbackQueue: [string | undefined, dispatchCallback][] = [];
   private _delayed = false;
-  private _effects: Record<string, () => void> = {};
+  private _effects: Record<string, void | (() => void)> = {};
   private _pendingEffects: Set<string> = new Set();
   private _callingSubscriptions = false;
 
@@ -33,7 +33,7 @@ export class Store {
     return this._options;
   }
 
-  public subscribe(subscription: subscription) {
+  public subscribe(subscription: subscription): void {
     if (!subscription) throw Error("No subscription provided method specified");
     this._subscriptions.push(subscription);
   }
@@ -55,7 +55,7 @@ export class Store {
     while (this._callbackQueue.length > 0) {
       try {
         const [name, callback] = this._callbackQueue.shift() as [string | undefined, dispatchCallback];
-          callback(name ? this._currentStoreState[name] : undefined);
+        callback(name ? this._currentStoreState[name] : undefined);
       } catch (err) {
         console.warn("Ignored error while executing callbacks");
       }
@@ -66,7 +66,7 @@ export class Store {
     name: string,
     reducer: reducer<CA, CS>,
     initialState: CS
-  ) {
+  ): void {
     if (name in this._reducers) {
       console.warn(`Redundant register call for <${name}> was ignored.`);
       return;
@@ -134,7 +134,7 @@ export class Store {
     this._refresh();
   }
 
-  private _checkEffects() {
+  private _checkEffects(): void {
     Object.entries(this._effects).forEach(([name, effectResult]) => {
       if (this._pendingEffects.has(name)) return;
       delete this._effects[name];
@@ -143,7 +143,7 @@ export class Store {
     this._pendingEffects.clear();
   }
 
-  public useEffect(name: string, effect: () => (() => void | void), options: { delay?: boolean } = {}) {
+  public useEffect(name: string, effect: () => void | (() => void), options: { delay?: boolean } = {}): void {
     const { delay } = options;
     if (!this._callingSubscriptions) {
       console.warn("useEffect called outside render loop, ignoring call.");
@@ -151,9 +151,9 @@ export class Store {
     }
     this._pendingEffects.add(name);
     if (name in this._effects) return;
-    const callback = effect();
-    if(!callback) return;
-    if (delay) this._callbackQueue.push([undefined, () => (this._effects[name] = effect())]);
+    if (delay) this._callbackQueue.push(
+      [undefined, () => (this._effects[name] = effect())]
+    );
     else this._effects[name] = effect();
   }
 }
