@@ -1,6 +1,6 @@
 {
   "name": "j-light-store",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "ultralight store",
   "bin": "lib/index.js",
   "main": "lib/index.js",
