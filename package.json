@@ -1,6 +1,6 @@
 {
   "name": "j-light-store",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "ultralight store combined with lit-html for rendering",
   "bin": "lib/index.js",
   "main": "lib/index.js",
