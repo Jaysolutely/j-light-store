@@ -3,8 +3,6 @@ export {
   StoreOptions,
   reducer,
   StoreState,
-  Action,
   dispatchCallback,
   subscription,
-  extendedDispatch,
 } from "./types";

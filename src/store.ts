@@ -4,9 +4,7 @@ import {
   subscription,
   StoreOptions,
   dispatchCallback,
-  Action,
   extendedDispatch,
-  state,
 } from "./types";
 
 export class Store {
@@ -59,37 +57,39 @@ export class Store {
     }
   }
 
-  public register(name: string, initialState?: state, reducer?: reducer): void {
-    if (name in this._currentStoreState || name in this._reducers) {
+  public register<CA, CS>(
+    name: string,
+    reducer: reducer<CA, CS>,
+    initialState: CS
+  ) {
+    if (name in this._reducers) {
       console.warn(`Redundant register call for <${name}> was ignored.`);
       return;
     }
-    if (initialState) {
-      this._currentStoreState[name] = initialState;
-      this._pendingStoreState[name] = initialState;
-    }
-    if (reducer) this._reducers[name] = reducer;
+    this._reducers[name] = reducer as reducer<unknown, unknown>;
+    this._currentStoreState[name] = initialState;
+    this._pendingStoreState[name] = initialState;
   }
 
-  public useReducer<CA extends Action = Action, CS = state>(
+  public useReducer<CA, CS>(
     name: string,
-    initialState: CS,
-    reducer: reducer<CA, CS>
+    reducer: reducer<CA, CS>,
+    initialState: CS
   ): [CS, extendedDispatch<CA, CS>] {
-    if (name in this._currentStoreState)
-      return [this._currentStoreState[name], this.extendDispatch<CA, CS>(name)];
-    this.register(name, initialState, reducer as reducer);
+    if (name in this._reducers)
+      return [this._currentStoreState[name] as CS, this.extendDispatch<CA, CS>(name)];
+    this.register(name, reducer , initialState);
     return [initialState, this.extendDispatch<CA, CS>(name)];
   }
 
-  public dispatch<CS = state>(
-    action: Action,
+  public dispatch<CA, CS>(
+    action: CA,
     name: string,
     callback?: dispatchCallback<CS>
   ): void {
     if (this._options.development)
       console.log("DISPATCH:", name, action, `with${callback ? "" : "out"} cb`);
-    if (callback) this._callbackQueue.push([name, callback]);
+    if (callback) this._callbackQueue.push([name, callback as dispatchCallback<unknown>]);
     let errorWhileDispatching = false;
     if (action && name) {
       let pendingState;
@@ -114,7 +114,7 @@ export class Store {
     }, 0);
   }
 
-  public extendDispatch<CA extends Action = Action, CS = state>(
+  public extendDispatch<CA, CS>(
     defaultName: string
   ): extendedDispatch<CA, CS> {
     return (
@@ -122,7 +122,7 @@ export class Store {
       name?: string,
       callback?: dispatchCallback<CS>
     ): void => {
-      this.dispatch<CS>(action as Action, name || defaultName, callback);
+      this.dispatch<CA, CS>(action, name || defaultName, callback);
     };
   }
   public refresh() {
