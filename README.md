@@ -6,7 +6,7 @@ Ultralight store
 
 Example with [lit-html](https://github.com/lit/lit/tree/main/packages/lit-html) to render.
 
-```code
+```JavaScript
 import { Store } from "j-light-store";
 import { render, html } from "lit-html";
 
