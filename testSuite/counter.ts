@@ -1,11 +1,11 @@
 import { html } from "lit-html";
 import { component } from ".";
-import { Action, reducer } from "../src";
+import { reducer } from "../src";
 
 export interface CounterState {
   value: number;
 }
-export interface CounterAction extends Action {
+export interface CounterAction {
   type: "inc" | "dec";
   value?: number;
 }
@@ -34,9 +34,13 @@ const reducer: reducer<CounterAction, CounterState> = (action, state) => {
 export const counter: component = (store) => {
   const [state, dispatch] = store.useReducer<CounterAction, CounterState>(
     "counter",
-    initialState,
-    reducer
+    reducer,
+    initialState
   );
+  store.useEffect("counter", () => {
+    console.log("Counter mounted")
+    return () => console.log("Counter unmounted");
+  });
   return html`
     <h2>${state.value}</h2>
     <button @click=${() => dispatch({ type: "inc" })}>+ 1</button>
