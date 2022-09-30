@@ -1,14 +1,13 @@
 {
   "compilerOptions": {
-    /* Visit https://aka.ms/tsconfig.json to read more about this file */
-    "target": "es6",
-    "module": "ES6",
+    "target": "esnext",
+    "module": "esnext",
     "declaration": true,
     "outDir": "lib",
     "strict": true,
     "esModuleInterop": true,
-    "moduleResolution": "Node"
+    "moduleResolution": "nodenext"
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "src/__tests__"]
+  "exclude": ["src/__tests__"]
 }
