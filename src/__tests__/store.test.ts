@@ -31,10 +31,10 @@ const myReducer: reducer<CounterAction, CounterState> = (action, state) => {
 
 describe("Basic store tests", () => {
   it("The storeState is set up", () => {
-    const myStore = new Store(options);
+    const myStore = new Store({}, options);
     expect(myStore.storeState).toEqual({});
   });
-  const myStore = new Store(options);
+  const myStore = new Store({}, options);
   const [state, dispatch] = myStore.useReducer<CounterAction, CounterState>(
     "counter",
     myReducer,
@@ -71,8 +71,8 @@ describe("Store ignores error throwing render methods", () => {
       if (cnt % 2 === 0) throw Error("Random error");
     };
   };
-  const myStore = new Store(options);
-  myStore.subscribe(getRender())
+  const myStore = new Store({}, options);
+  myStore.subscribe(getRender());
   const [, dispatch] = myStore.useReducer<CounterAction, CounterState>(
     "counter",
     myReducer,
@@ -105,7 +105,7 @@ describe("Store ignores error throwing render methods", () => {
 });
 
 describe("Store handles error throwing reducers", () => {
-  const myStore = new Store(options);
+  const myStore = new Store({}, options);
   const myErrorReducer: reducer<CounterAction, CounterState> = () => {
     throw Error("Error in reducer");
   };

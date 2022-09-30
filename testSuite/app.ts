@@ -1,18 +1,18 @@
-import { html, TemplateResult } from "lit-html";
+import { html } from "lit-html";
 import { Store, reducer } from "../src";
 import { counter } from "./counter";
 
 interface AppAction {
-  type: "mount" | "umount"
+  type: "mount" | "umount";
 }
 interface AppState {
-  counterMounted: boolean
+  counterMounted: boolean;
 }
 const initialState: AppState = {
   counterMounted: true,
 };
 
-const reducer: reducer<AppAction, AppState> = (action, state) => {
+const reducer = (action: AppAction, state: AppState) => {
   switch (action.type) {
     case "mount":
       return {
@@ -29,14 +29,16 @@ const reducer: reducer<AppAction, AppState> = (action, state) => {
   }
 };
 
-export function app(store: Store): TemplateResult {
-  const [state, dispatch] = store.useReducer<AppAction, AppState>("app", reducer, initialState)
+export function app(store: Store) {
+  const [state, dispatch] = store.useReducer("app", reducer, initialState);
   return html`
     <h1>HELLO WORLD</h1>
     <div>${state.counterMounted ? counter(store) : ""}</div>
-    <br>
-      <p>Check console to check mounting and unmounting via useEffect!</p>
-    <button @click=${() => dispatch({type: "mount"})}>mount counter</button>
-    <button @click=${() => dispatch({type: "umount"})}>unmount counter</button>
+    <br />
+    <p>Check console to check mounting and unmounting via useEffect!</p>
+    <button @click=${() => dispatch({ type: "mount" })}>mount counter</button>
+    <button @click=${() => dispatch({ type: "umount" })}>
+      unmount counter
+    </button>
   `;
 }

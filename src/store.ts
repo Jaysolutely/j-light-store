@@ -1,5 +1,5 @@
 import {
-  StoreState,
+  key,
   reducer,
   subscription,
   StoreOptions,
@@ -7,44 +7,49 @@ import {
   extendedDispatch,
 } from "./types";
 
-export class Store {
-  private _currentStoreState: StoreState = {};
-  private _pendingStoreState: StoreState = {};
-  private _reducers: Record<string, reducer> = {};
-  private _subscriptions: subscription[] = [];
+export class Store<S extends Record<key, unknown> = Record<key, unknown>> {
+  private _currentStoreState;
+  private _pendingStoreState;
+  private _reducers: Record<key, reducer<unknown, unknown>> = {};
+  private _subscriptions: subscription<S>[] = [];
   private _options: StoreOptions;
-  private _callbackQueue: [string | undefined, dispatchCallback][] = [];
+  private _callbackQueue: [key | undefined, dispatchCallback<unknown>][] = [];
   private _delayed = false;
-  private _effects: Record<string, void | (() => void)> = {};
-  private _pendingEffects: Set<string> = new Set();
+  private _effects: Record<key, void | (() => void)> = {};
+  private _pendingEffects: Set<key> = new Set();
   private _callingSubscriptions = false;
 
-  constructor(options: StoreOptions = {}) {
+  constructor(initial: Partial<S>, options: StoreOptions = {}) {
+    this._currentStoreState = initial;
+    this._pendingStoreState = initial;
     this._options = options;
   }
 
-  public get storeState(): StoreState {
+  public get storeState() {
     return this._currentStoreState;
   }
-  public get pendingStoreState(): StoreState {
+
+  public get pendingStoreState() {
     return this._pendingStoreState;
   }
-  public get options(): StoreOptions {
+
+  public get options() {
     return this._options;
   }
 
-  public subscribe(subscription: subscription): void {
-    if (!subscription) throw Error("No subscription provided method specified");
+  public subscribe(subscription: subscription<S>): void {
+    if (typeof subscription !== "function")
+      throw Error("No subscription method provided");
     this._subscriptions.push(subscription);
   }
 
-  private _refresh(): void {
+  public refresh(): void {
     if (this._options.development) console.log("REFRESHING");
     this._currentStoreState = this._pendingStoreState;
     this._callingSubscriptions = true;
     this._subscriptions.forEach((subscription) => {
       try {
-        subscription(this)
+        subscription(this);
       } catch (err) {
         console.log("Ignored error while executing subscriptions");
         if (this._options.development) console.error(err);
@@ -52,49 +57,55 @@ export class Store {
     });
     this._callingSubscriptions = false;
     this._checkEffects();
-    while (this._callbackQueue.length > 0) {
+    this._callbackQueue.forEach(([name, callback]) => {
       try {
-        const [name, callback] = this._callbackQueue.shift() as [string | undefined, dispatchCallback];
         callback(name ? this._currentStoreState[name] : undefined);
       } catch (err) {
         console.warn("Ignored error while executing callbacks");
       }
-    }
+    });
+    this._callbackQueue = [];
   }
 
   public register<CA, CS>(
-    name: string,
+    name: keyof S,
     reducer: reducer<CA, CS>,
     initialState: CS
   ): void {
     if (name in this._reducers) {
-      console.warn(`Redundant register call for <${name}> was ignored.`);
+      console.warn(
+        `Redundant register call for <${String(name)}> was ignored.`
+      );
       return;
     }
     this._reducers[name] = reducer as reducer<unknown, unknown>;
-    this._currentStoreState[name] = initialState;
-    this._pendingStoreState[name] = initialState;
+    this._currentStoreState[name] = initialState as S[keyof S];
+    this._pendingStoreState[name] = initialState as S[keyof S];
   }
 
   public useReducer<CA, CS>(
-    name: string,
+    name: keyof S,
     reducer: reducer<CA, CS>,
     initialState: CS
   ): [CS, extendedDispatch<CA, CS>] {
     if (name in this._reducers)
-      return [this._currentStoreState[name] as CS, this._extendDispatch<CA, CS>(name)];
+      return [
+        this._currentStoreState[name] as CS,
+        this.extendDispatch<CA, CS>(name),
+      ];
     this.register(name, reducer, initialState);
-    return [initialState, this._extendDispatch<CA, CS>(name)];
+    return [initialState, this.extendDispatch<CA, CS>(name)];
   }
 
   public dispatch<CA, CS>(
     action: CA,
-    name: string,
+    name: keyof S,
     callback?: dispatchCallback<CS>
   ): void {
     if (this._options.development)
       console.log("DISPATCH:", name, action, `with${callback ? "" : "out"} cb`);
-    if (callback) this._callbackQueue.push([name, callback as dispatchCallback<unknown>]);
+    if (callback)
+      this._callbackQueue.push([name, callback as dispatchCallback<unknown>]);
     let errorWhileDispatching = false;
     if (action && name) {
       let pendingState;
@@ -104,7 +115,7 @@ export class Store {
           this._pendingStoreState[name]
         );
         if (this._pendingStoreState[name] === pendingState) return;
-        this._pendingStoreState[name] = pendingState;
+        this._pendingStoreState[name] = pendingState as S[keyof S];
       } catch (err) {
         errorWhileDispatching = true;
         console.log("Ignored error while dispatching");
@@ -115,23 +126,20 @@ export class Store {
     this._delayed = true;
     setTimeout(() => {
       this._delayed = false;
-      this._refresh();
+      this.refresh();
     }, 0);
   }
 
-  private _extendDispatch<CA, CS>(
-    defaultName: string
+  public extendDispatch<CA, CS>(
+    defaultName: keyof S
   ): extendedDispatch<CA, CS> {
     return (
       action: CA,
-      name?: string,
+      name?: keyof S,
       callback?: dispatchCallback<CS>
     ): void => {
       this.dispatch<CA, CS>(action, name || defaultName, callback);
     };
-  }
-  public refresh() {
-    this._refresh();
   }
 
   private _checkEffects(): void {
@@ -143,7 +151,11 @@ export class Store {
     this._pendingEffects.clear();
   }
 
-  public useEffect(name: string, effect: () => void | (() => void), options: { delay?: boolean } = {}): void {
+  public useEffect(
+    name: key,
+    effect: () => void | (() => void),
+    options: { delay?: boolean } = {}
+  ): void {
     const { delay } = options;
     if (!this._callingSubscriptions) {
       console.warn("useEffect called outside render loop, ignoring call.");
@@ -151,9 +163,11 @@ export class Store {
     }
     this._pendingEffects.add(name);
     if (name in this._effects) return;
-    if (delay) this._callbackQueue.push(
-      [undefined, () => (this._effects[name] = effect())]
-    );
+    if (delay)
+      this._callbackQueue.push([
+        undefined,
+        () => (this._effects[name] = effect()),
+      ]);
     else this._effects[name] = effect();
   }
 }

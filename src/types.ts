@@ -1,16 +1,14 @@
-// eslint-disable-file @typescript-eslint/no-explicit-any
 import { Store } from "./store";
 export interface StoreOptions {
   development?: boolean;
 }
-export type StoreState = Record<string, unknown>;
-export type subscription = (store: Store) => void;
-export type dispatchCallback<CS = unknown> = (state: CS) => void;
-export type reducer<CA =  unknown, CS = unknown> = (
-  action: CA,
-  state: CS
-) => CS;
-export type extendedDispatch<CA = unknown, CS = unknown> = (
+export type key = string | number | symbol;
+export type subscription<S extends Record<key, unknown>> = (
+  store?: Store<S>
+) => void;
+export type dispatchCallback<CS> = (state: CS) => void;
+export type reducer<CA, CS> = (action: CA, state: CS) => CS;
+export type extendedDispatch<CA, CS> = (
   action: CA,
   name?: string,
   callback?: dispatchCallback<CS>

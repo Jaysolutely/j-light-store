@@ -1,8 +1,2 @@
 export * from "./store";
-export {
-  StoreOptions,
-  reducer,
-  StoreState,
-  dispatchCallback,
-  subscription,
-} from "./types";
+export { StoreOptions, reducer, dispatchCallback, subscription } from "./types";
