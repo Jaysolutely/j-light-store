@@ -159,20 +159,18 @@ export function createStore<S extends Record<key, unknown>>(
     if (callback)
       props.callbackQueue.push([name, callback as dispatchCallback<unknown>]);
     let errorWhileDispatching = false;
-    if (action && name) {
-      let pendingState;
-      try {
-        pendingState = props.reducers[name](
-          action,
-          props.pendingStoreState[name]
-        );
-        if (props.pendingStoreState[name] === pendingState) return;
-        props.pendingStoreState[name] = pendingState as S[keyof S];
-      } catch (err) {
-        errorWhileDispatching = true;
-        log("WARN", "Ignored error while dispatching");
-        log("DEBUG", "ERROR MESSAGE:", err);
-      }
+    let pendingState;
+    try {
+      pendingState = props.reducers[name](
+        action,
+        props.pendingStoreState[name]
+      );
+      if (props.pendingStoreState[name] === pendingState) return;
+      props.pendingStoreState[name] = pendingState as S[keyof S];
+    } catch (err) {
+      errorWhileDispatching = true;
+      log("WARN", "Ignored error while dispatching");
+      log("DEBUG", "ERROR MESSAGE:", err);
     }
     if (props.delayed || (errorWhileDispatching && !callback)) return;
     props.delayed = true;
