@@ -11,12 +11,12 @@ import {
 interface StoreProperties<S extends Record<key, unknown>> {
   currentStoreState: Partial<S>;
   pendingStoreState: Partial<S>;
-  reducers: Record<key, reducer<unknown, unknown>>;
+  reducers: Map<key, reducer<unknown, unknown>>;
   subscriptions: subscription<S>[];
   options: StoreOptions;
   callbackQueue: [key | undefined, dispatchCallback<unknown>][];
   delayed: boolean;
-  effects: Record<key, void | (() => void)>;
+  effects: Map<key, void | (() => void)>;
   pendingEffects: Set<key>;
   callingSubscriptions: boolean;
 }
@@ -40,12 +40,12 @@ export function createStore<S extends Record<key, unknown>>(
   const props: StoreProperties<S> = {
     currentStoreState: initial,
     pendingStoreState: initial,
-    reducers: {},
+    reducers: new Map(),
     subscriptions: [],
     options,
     callbackQueue: [],
     delayed: false,
-    effects: {},
+    effects: new Map(),
     pendingEffects: new Set(),
     callingSubscriptions: false,
   };
@@ -133,7 +133,7 @@ export function createStore<S extends Record<key, unknown>>(
       log("WARN", `Redundant register call for <${String(name)}> was ignored.`);
       return;
     }
-    props.reducers[name] = reducer as reducer<unknown, unknown>;
+    props.reducers.set(name, reducer as reducer<unknown, unknown>);
     props.currentStoreState[name] = initialState as S[keyof S];
     props.pendingStoreState[name] = initialState as S[keyof S];
   }
@@ -161,12 +161,12 @@ export function createStore<S extends Record<key, unknown>>(
     if (callback)
       props.callbackQueue.push([name, callback as dispatchCallback<unknown>]);
     let errorWhileDispatching = false;
-    let pendingState;
+    if (!props.reducers.has(name))
+      log("WARN", `reducer ${String(name)} not registered`);
     try {
-      pendingState = props.reducers[name](
-        action,
-        props.pendingStoreState[name]
-      );
+      const pendingState = (
+        props.reducers.get(name) as reducer<unknown, unknown>
+      )(action, props.pendingStoreState[name]);
       if (props.pendingStoreState[name] === pendingState) return;
       props.pendingStoreState[name] = pendingState as S[keyof S];
     } catch (err) {
@@ -195,9 +195,9 @@ export function createStore<S extends Record<key, unknown>>(
   }
 
   function _checkEffects(): void {
-    Object.entries(props.effects).forEach(([name, effectResult]) => {
+    props.effects.forEach((effectResult, name) => {
       if (props.pendingEffects.has(name)) return;
-      delete props.effects[name];
+      props.effects.delete(name);
       if (typeof effectResult === "function") effectResult();
     });
     props.pendingEffects.clear();
@@ -214,13 +214,13 @@ export function createStore<S extends Record<key, unknown>>(
       return;
     }
     props.pendingEffects.add(name);
-    if (name in props.effects) return;
+    if (props.effects.has(name)) return;
     if (delay)
       props.callbackQueue.push([
         undefined,
-        () => (props.effects[name] = effect()),
+        () => props.effects.set(name, effect()),
       ]);
-    else props.effects[name] = effect();
+    else props.effects.set(name, effect());
   }
 
   return {
