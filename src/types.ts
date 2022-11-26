@@ -1,5 +1,8 @@
+export type logLevel = "ERROR" | "WARN" | "INFO" | "DEBUG";
 export interface StoreOptions {
   development?: boolean;
+  production?: boolean;
+  logLevel?: logLevel;
 }
 export type key = string | number | symbol;
 export type subscription<S extends Record<key, unknown>> = (

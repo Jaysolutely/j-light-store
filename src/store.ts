@@ -3,6 +3,7 @@ import {
   reducer,
   subscription,
   StoreOptions,
+  logLevel,
   dispatchCallback,
   extendedDispatch,
 } from "./types";
@@ -20,6 +21,13 @@ interface StoreProperties<S extends Record<key, unknown>> {
   callingSubscriptions: boolean;
 }
 
+const mapLogLevels: Record<logLevel, number> = {
+  ERROR: 1,
+  WARN: 2,
+  INFO: 3,
+  DEBUG: 4,
+};
+
 export function createStore<
   S extends Record<key, unknown> = Record<key, unknown>
 >(initial: Partial<S>, options: StoreOptions = {}) {
@@ -36,6 +44,29 @@ export function createStore<
     callingSubscriptions: false,
   };
 
+  const log = ( options.development || options.logLevel ) && !options.production
+    ? (threshold: logLevel, ...messages: unknown[]) => {
+        if (
+          mapLogLevels[props.options.logLevel ?? "WARN"] <
+          mapLogLevels[threshold]
+        )
+          return;
+        switch (threshold) {
+          case "ERROR":
+            console.error(...messages);
+            break;
+          case "WARN":
+            console.warn(...messages);
+            break;
+          case "INFO":
+          case "DEBUG":
+            console.log(...messages);
+        }
+      }
+    : () => {
+        return;
+      };
+
   function getState() {
     return props.currentStoreState;
   }
@@ -49,21 +80,23 @@ export function createStore<
   }
 
   function subscribe(subscription: subscription<S>): void {
-    if (typeof subscription !== "function")
-      throw Error("No subscription method provided");
+    if (typeof subscription !== "function") {
+      log("ERROR", "No subscription method provided");
+      return;
+    }
     props.subscriptions.push(subscription);
   }
 
   function refresh(): void {
-    if (props.options.development) console.log("REFRESHING");
+    log("INFO", "REFRESHING");
     props.currentStoreState = props.pendingStoreState;
     props.callingSubscriptions = true;
     props.subscriptions.forEach((subscription) => {
       try {
         subscription(props.currentStoreState);
       } catch (err) {
-        console.log("Ignored error while executing subscriptions");
-        if (props.options.development) console.error(err);
+        log("WARN", "Ignored error while executing subscriptions");
+        log("DEBUG", "ERROR, MESSAGE", err);
       }
     });
     props.callingSubscriptions = false;
@@ -72,7 +105,7 @@ export function createStore<
       try {
         callback(name ? props.currentStoreState[name] : undefined);
       } catch (err) {
-        console.warn("Ignored error while executing callbacks");
+        log("WARN", "Ignored error while executing callbacks");
       }
     });
     props.callbackQueue = [];
@@ -84,9 +117,7 @@ export function createStore<
     initialState: CS
   ): void {
     if (name in props.reducers) {
-      console.warn(
-        `Redundant register call for <${String(name)}> was ignored.`
-      );
+      log("WARN", `Redundant register call for <${String(name)}> was ignored.`);
       return;
     }
     props.reducers[name] = reducer as reducer<unknown, unknown>;
@@ -113,8 +144,7 @@ export function createStore<
     name: keyof S,
     callback?: dispatchCallback<CS>
   ): void {
-    if (props.options.development)
-      console.log("DISPATCH:", name, action, `with${callback ? "" : "out"} cb`);
+    log("INFO", "DISPATCH:", name, action, `with${callback ? "" : "out"} cb`);
     if (callback)
       props.callbackQueue.push([name, callback as dispatchCallback<unknown>]);
     let errorWhileDispatching = false;
@@ -129,8 +159,8 @@ export function createStore<
         props.pendingStoreState[name] = pendingState as S[keyof S];
       } catch (err) {
         errorWhileDispatching = true;
-        console.log("Ignored error while dispatching");
-        if (props.options.development) console.error(err);
+        log("WARN", "Ignored error while dispatching");
+        log("DEBUG", "ERROR MESSAGE:", err);
       }
     }
     if (props.delayed || (errorWhileDispatching && !callback)) return;
