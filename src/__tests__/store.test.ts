@@ -1,6 +1,6 @@
 import { reducer, createStore, StoreOptions } from "../index";
 
-const options: StoreOptions = { development: true, logLevel: "WARN" };
+const options: StoreOptions = { development: true, logLevel: "DEBUG" };
 
 interface CounterState {
   value: number;

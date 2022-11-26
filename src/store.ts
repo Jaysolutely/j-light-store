@@ -28,6 +28,11 @@ const mapLogLevels: Record<logLevel, number> = {
   DEBUG: 4,
 };
 
+function measurePerformance(): () => number {
+  const start = performance.now();
+  return () => Math.round(performance.now() - start);
+}
+
 export function createStore<S extends Record<key, unknown>>(
   initial: Partial<S>,
   options: StoreOptions = {}
@@ -95,6 +100,7 @@ export function createStore<S extends Record<key, unknown>>(
     log("INFO", "REFRESHING");
     props.currentStoreState = props.pendingStoreState;
     props.callingSubscriptions = true;
+    const measure = options.development ? measurePerformance() : false;
     props.subscriptions.forEach((subscription) => {
       try {
         subscription(props.currentStoreState);
@@ -103,6 +109,7 @@ export function createStore<S extends Record<key, unknown>>(
         log("DEBUG", "ERROR, MESSAGE", err);
       }
     });
+    measure && log("INFO", `Called Subscriptions in ${measure()} ms`);
     props.callingSubscriptions = false;
     _checkEffects();
     props.callbackQueue.forEach(([name, callback]) => {
