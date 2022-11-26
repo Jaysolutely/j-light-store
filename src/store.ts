@@ -50,31 +50,33 @@ export function createStore<S extends Record<key, unknown>>(
     callingSubscriptions: false,
   };
 
-  const log =
-    (options.development || options.logLevel) && !options.production
-      ? (threshold: logLevel, ...messages: unknown[]) => {
-          if (
-            mapLogLevels[props.options.logLevel ?? "WARN"] <
-            mapLogLevels[threshold]
-          )
-            return;
-          switch (threshold) {
-            case "ERROR":
-              console.error("[JLS-ERROR]:", ...messages);
-              break;
-            case "WARN":
-              console.warn("[JLS-WARN]:", ...messages);
-              break;
-            case "INFO":
-              console.log("[JLS-INFO]:", ...messages);
-              break;
-            case "DEBUG":
-              console.log("[JLS-DEBUG]:", ...messages);
-          }
-        }
-      : () => {
+  const loggingActive =
+    (options.development || options.logLevel) && !options.production;
+
+  const log = loggingActive
+    ? (threshold: logLevel, ...messages: unknown[]) => {
+        if (
+          mapLogLevels[props.options.logLevel ?? "WARN"] <
+          mapLogLevels[threshold]
+        )
           return;
-        };
+        switch (threshold) {
+          case "ERROR":
+            console.error("[JLS-ERROR]:", ...messages);
+            break;
+          case "WARN":
+            console.warn("[JLS-WARN]:", ...messages);
+            break;
+          case "INFO":
+            console.log("[JLS-INFO]:", ...messages);
+            break;
+          case "DEBUG":
+            console.log("[JLS-DEBUG]:", ...messages);
+        }
+      }
+    : () => {
+        return;
+      };
 
   function getState() {
     return props.currentStoreState;
@@ -100,7 +102,7 @@ export function createStore<S extends Record<key, unknown>>(
     log("INFO", "REFRESHING");
     props.currentStoreState = props.pendingStoreState;
     props.callingSubscriptions = true;
-    const measure = options.development ? measurePerformance() : false;
+    const measure = loggingActive ? measurePerformance() : false;
     props.subscriptions.forEach((subscription) => {
       try {
         subscription(props.currentStoreState);
