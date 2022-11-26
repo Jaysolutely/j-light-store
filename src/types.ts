@@ -1,10 +1,9 @@
-import { Store } from "./store";
 export interface StoreOptions {
   development?: boolean;
 }
 export type key = string | number | symbol;
 export type subscription<S extends Record<key, unknown>> = (
-  store?: Store<S>
+  state?: Partial<S>
 ) => void;
 export type dispatchCallback<CS> = (state: CS) => void;
 export type reducer<CA, CS> = (action: CA, state: CS) => CS;

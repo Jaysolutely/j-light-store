@@ -7,130 +7,141 @@ import {
   extendedDispatch,
 } from "./types";
 
-export class Store<S extends Record<key, unknown> = Record<key, unknown>> {
-  private _currentStoreState;
-  private _pendingStoreState;
-  private _reducers: Record<key, reducer<unknown, unknown>> = {};
-  private _subscriptions: subscription<S>[] = [];
-  private _options: StoreOptions;
-  private _callbackQueue: [key | undefined, dispatchCallback<unknown>][] = [];
-  private _delayed = false;
-  private _effects: Record<key, void | (() => void)> = {};
-  private _pendingEffects: Set<key> = new Set();
-  private _callingSubscriptions = false;
+interface StoreProperties<S extends Record<key, unknown>> {
+  currentStoreState: Partial<S>;
+  pendingStoreState: Partial<S>;
+  reducers: Record<key, reducer<unknown, unknown>>;
+  subscriptions: subscription<S>[];
+  options: StoreOptions;
+  callbackQueue: [key | undefined, dispatchCallback<unknown>][];
+  delayed: boolean;
+  effects: Record<key, void | (() => void)>;
+  pendingEffects: Set<key>;
+  callingSubscriptions: boolean;
+}
 
-  constructor(initial: Partial<S>, options: StoreOptions = {}) {
-    this._currentStoreState = initial;
-    this._pendingStoreState = initial;
-    this._options = options;
+export function createStore<
+  S extends Record<key, unknown> = Record<key, unknown>
+>(initial: Partial<S>, options: StoreOptions = {}) {
+  const props: StoreProperties<S> = {
+    currentStoreState: initial,
+    pendingStoreState: initial,
+    reducers: {},
+    subscriptions: [],
+    options,
+    callbackQueue: [],
+    delayed: false,
+    effects: {},
+    pendingEffects: new Set(),
+    callingSubscriptions: false,
+  };
+
+  function getState() {
+    return props.currentStoreState;
   }
 
-  public get storeState() {
-    return this._currentStoreState;
+  function getPendingState() {
+    return props.pendingStoreState;
   }
 
-  public get pendingStoreState() {
-    return this._pendingStoreState;
+  function getOptions() {
+    return props.options;
   }
 
-  public get options() {
-    return this._options;
-  }
-
-  public subscribe(subscription: subscription<S>): void {
+  function subscribe(subscription: subscription<S>): void {
     if (typeof subscription !== "function")
       throw Error("No subscription method provided");
-    this._subscriptions.push(subscription);
+    props.subscriptions.push(subscription);
   }
 
-  public refresh(): void {
-    if (this._options.development) console.log("REFRESHING");
-    this._currentStoreState = this._pendingStoreState;
-    this._callingSubscriptions = true;
-    this._subscriptions.forEach((subscription) => {
+  function refresh(): void {
+    if (props.options.development) console.log("REFRESHING");
+    props.currentStoreState = props.pendingStoreState;
+    props.callingSubscriptions = true;
+    props.subscriptions.forEach((subscription) => {
       try {
-        subscription(this);
+        subscription(props.currentStoreState);
       } catch (err) {
         console.log("Ignored error while executing subscriptions");
-        if (this._options.development) console.error(err);
+        if (props.options.development) console.error(err);
       }
     });
-    this._callingSubscriptions = false;
-    this._checkEffects();
-    this._callbackQueue.forEach(([name, callback]) => {
+    props.callingSubscriptions = false;
+    _checkEffects();
+    props.callbackQueue.forEach(([name, callback]) => {
       try {
-        callback(name ? this._currentStoreState[name] : undefined);
+        callback(name ? props.currentStoreState[name] : undefined);
       } catch (err) {
         console.warn("Ignored error while executing callbacks");
       }
     });
-    this._callbackQueue = [];
+    props.callbackQueue = [];
   }
 
-  public register<CA, CS>(
+  function register<CA, CS>(
     name: keyof S,
     reducer: reducer<CA, CS>,
     initialState: CS
   ): void {
-    if (name in this._reducers) {
+    if (name in props.reducers) {
       console.warn(
         `Redundant register call for <${String(name)}> was ignored.`
       );
       return;
     }
-    this._reducers[name] = reducer as reducer<unknown, unknown>;
-    this._currentStoreState[name] = initialState as S[keyof S];
-    this._pendingStoreState[name] = initialState as S[keyof S];
+    props.reducers[name] = reducer as reducer<unknown, unknown>;
+    props.currentStoreState[name] = initialState as S[keyof S];
+    props.pendingStoreState[name] = initialState as S[keyof S];
   }
 
-  public useReducer<CA, CS>(
+  function useReducer<CA, CS>(
     name: keyof S,
     reducer: reducer<CA, CS>,
     initialState: CS
   ): [CS, extendedDispatch<CA, CS>] {
-    if (name in this._reducers)
+    if (name in props.reducers)
       return [
-        this._currentStoreState[name] as CS,
-        this.extendDispatch<CA, CS>(name),
+        props.currentStoreState[name] as CS,
+        extendDispatch<CA, CS>(name),
       ];
-    this.register(name, reducer, initialState);
-    return [initialState, this.extendDispatch<CA, CS>(name)];
+    register(name, reducer, initialState);
+    return [initialState, extendDispatch<CA, CS>(name)];
   }
 
-  public dispatch<CA, CS>(
+  function dispatch<CA, CS>(
     action: CA,
     name: keyof S,
     callback?: dispatchCallback<CS>
   ): void {
-    if (this._options.development)
+    if (props.options.development)
       console.log("DISPATCH:", name, action, `with${callback ? "" : "out"} cb`);
     if (callback)
-      this._callbackQueue.push([name, callback as dispatchCallback<unknown>]);
+      props.callbackQueue.push([name, callback as dispatchCallback<unknown>]);
     let errorWhileDispatching = false;
     if (action && name) {
       let pendingState;
       try {
-        pendingState = this._reducers[name](
+        pendingState = props.reducers[name](
           action,
-          this._pendingStoreState[name]
+          props.pendingStoreState[name]
         );
-        if (this._pendingStoreState[name] === pendingState) return;
-        this._pendingStoreState[name] = pendingState as S[keyof S];
+        if (props.pendingStoreState[name] === pendingState) return;
+        props.pendingStoreState[name] = pendingState as S[keyof S];
       } catch (err) {
         errorWhileDispatching = true;
         console.log("Ignored error while dispatching");
-        if (this._options.development) console.error(err);
+        if (props.options.development) console.error(err);
       }
     }
-    if (this._delayed || (errorWhileDispatching && !callback)) return;
-    this._delayed = true;
+    if (props.delayed || (errorWhileDispatching && !callback)) return;
+    props.delayed = true;
     setTimeout(() => {
-      this._delayed = false;
-      this.refresh();
+      props.delayed = false;
+      refresh();
     }, 0);
   }
 
-  public extendDispatch<CA, CS>(
+  function extendDispatch<CA, CS>(
     defaultName: keyof S
   ): extendedDispatch<CA, CS> {
     return (
@@ -138,36 +149,48 @@ export class Store<S extends Record<key, unknown> = Record<key, unknown>> {
       name?: keyof S,
       callback?: dispatchCallback<CS>
     ): void => {
-      this.dispatch<CA, CS>(action, name || defaultName, callback);
+      dispatch<CA, CS>(action, name || defaultName, callback);
     };
   }
 
-  private _checkEffects(): void {
-    Object.entries(this._effects).forEach(([name, effectResult]) => {
-      if (this._pendingEffects.has(name)) return;
-      delete this._effects[name];
+  function _checkEffects(): void {
+    Object.entries(props.effects).forEach(([name, effectResult]) => {
+      if (props.pendingEffects.has(name)) return;
+      delete props.effects[name];
       if (typeof effectResult === "function") effectResult();
     });
-    this._pendingEffects.clear();
+    props.pendingEffects.clear();
   }
 
-  public useEffect(
+  function useEffect(
     name: key,
     effect: () => void | (() => void),
     options: { delay?: boolean } = {}
   ): void {
     const { delay } = options;
-    if (!this._callingSubscriptions) {
+    if (!props.callingSubscriptions) {
       console.warn("useEffect called outside render loop, ignoring call.");
       return;
     }
-    this._pendingEffects.add(name);
-    if (name in this._effects) return;
+    props.pendingEffects.add(name);
+    if (name in props.effects) return;
     if (delay)
-      this._callbackQueue.push([
+      props.callbackQueue.push([
         undefined,
-        () => (this._effects[name] = effect()),
+        () => (props.effects[name] = effect()),
       ]);
-    else this._effects[name] = effect();
+    else props.effects[name] = effect();
   }
+
+  return {
+    useEffect,
+    register,
+    useReducer,
+    extendDispatch,
+    dispatch,
+    getState,
+    getPendingState,
+    getOptions,
+    subscribe,
+  };
 }
