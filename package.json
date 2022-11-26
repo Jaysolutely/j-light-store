@@ -1,6 +1,6 @@
 {
   "name": "j-light-store",
-  "version": "4.1.0",
+  "version": "4.1.1",
   "description": "ultralight store",
   "main": "lib/index.js",
   "source": "lib/index.js",
