@@ -1,11 +1,11 @@
-import { Store } from "../src";
+import { createStore } from "../src";
 import { render, html } from "lit-html";
 
 function reducer(_, state) {
   return state + 1;
 }
 
-const store = new Store({});
+const store = createStore({});
 
 function counter() {
   const [value, dispatch] = store.useReducer("counter", reducer, 0);
