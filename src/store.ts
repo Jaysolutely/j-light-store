@@ -44,28 +44,31 @@ export function createStore<
     callingSubscriptions: false,
   };
 
-  const log = ( options.development || options.logLevel ) && !options.production
-    ? (threshold: logLevel, ...messages: unknown[]) => {
-        if (
-          mapLogLevels[props.options.logLevel ?? "WARN"] <
-          mapLogLevels[threshold]
-        )
-          return;
-        switch (threshold) {
-          case "ERROR":
-            console.error(...messages);
-            break;
-          case "WARN":
-            console.warn(...messages);
-            break;
-          case "INFO":
-          case "DEBUG":
-            console.log(...messages);
+  const log =
+    (options.development || options.logLevel) && !options.production
+      ? (threshold: logLevel, ...messages: unknown[]) => {
+          if (
+            mapLogLevels[props.options.logLevel ?? "WARN"] <
+            mapLogLevels[threshold]
+          )
+            return;
+          switch (threshold) {
+            case "ERROR":
+              console.error("[JLS-ERROR]:", ...messages);
+              break;
+            case "WARN":
+              console.warn("[JLS-WARN]:", ...messages);
+              break;
+            case "INFO":
+              console.log("[JLS-INFO]:", ...messages);
+              break;
+            case "DEBUG":
+              console.log("[JLS-DEBUG]:", ...messages);
+          }
         }
-      }
-    : () => {
-        return;
-      };
+      : () => {
+          return;
+        };
 
   function getState() {
     return props.currentStoreState;
@@ -222,5 +225,6 @@ export function createStore<
     getPendingState,
     getOptions,
     subscribe,
+    refresh,
   };
 }
