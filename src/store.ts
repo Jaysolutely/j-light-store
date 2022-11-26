@@ -28,9 +28,10 @@ const mapLogLevels: Record<logLevel, number> = {
   DEBUG: 4,
 };
 
-export function createStore<
-  S extends Record<key, unknown> = Record<key, unknown>
->(initial: Partial<S>, options: StoreOptions = {}) {
+export function createStore<S extends Record<key, unknown>>(
+  initial: Partial<S>,
+  options: StoreOptions = {}
+) {
   const props: StoreProperties<S> = {
     currentStoreState: initial,
     pendingStoreState: initial,
