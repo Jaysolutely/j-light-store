@@ -187,10 +187,9 @@ export function createStore<S extends Record<key, unknown>>(
   ): extendedDispatch<CA, CS> {
     return (
       action: CA,
-      name?: keyof S,
       callback?: dispatchCallback<CS>
     ): void => {
-      dispatch<CA, CS>(action, name || defaultName, callback);
+      dispatch<CA, CS>(action, defaultName, callback);
     };
   }
 
@@ -223,6 +222,10 @@ export function createStore<S extends Record<key, unknown>>(
     else props.effects.set(name, effect());
   }
 
+  function useState<T>(name: key, initialValue: T) {
+    return useReducer(name, (value: T) => value, initialValue);
+  }
+
   return {
     useEffect,
     register,
@@ -234,5 +237,6 @@ export function createStore<S extends Record<key, unknown>>(
     getOptions,
     subscribe,
     refresh,
+    useState,
   };
 }

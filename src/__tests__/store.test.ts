@@ -44,20 +44,26 @@ describe("Basic store tests", () => {
   it("Dispatching events in substore works", () =>
     expect(
       new Promise((res) =>
-        dispatch({ type: "dec", value: 6 }, undefined, (state) =>
-          res(state.value)
-        )
+        dispatch({ type: "dec", value: 6 }, (state) => res(state.value))
       )
     ).resolves.toBe(-6));
   it("Dispatching multiple events in substore works", () =>
     expect(
       new Promise((res) => {
         dispatch({ type: "dec", value: 4 });
-        dispatch({ type: "inc", value: 13 }, undefined, (state) =>
-          res(state.value)
-        );
+        dispatch({ type: "inc", value: 13 }, (state) => res(state.value));
       })
     ).resolves.toBe(3));
+  const [state2, setState2] = myStore.useState("somekey", "hello" as string);
+  it("useState initialising", () => {
+    expect(state2).toEqual("hello");
+  });
+  it("useState setting", () =>
+    expect(
+      new Promise((res) => {
+        setState2("mellow", (state) => res(state));
+      })
+    ).resolves.toBe("mellow"));
 });
 
 describe("Store ignores error throwing render methods", () => {
@@ -79,25 +85,19 @@ describe("Store ignores error throwing render methods", () => {
   it("first dispatch", () =>
     expect(
       new Promise((res) => {
-        dispatch({ type: "inc", value: 5 }, undefined, (state) =>
-          res(state.value)
-        );
+        dispatch({ type: "inc", value: 5 }, (state) => res(state.value));
       })
     ).resolves.toBe(5));
   it("second dispatch", () =>
     expect(
       new Promise((res) => {
-        dispatch({ type: "dec", value: 2 }, undefined, (state) =>
-          res(state.value)
-        );
+        dispatch({ type: "dec", value: 2 }, (state) => res(state.value));
       })
     ).resolves.toBe(3));
   it("third dispatch", () =>
     expect(
       new Promise((res) => {
-        dispatch({ type: "inc", value: 7 }, undefined, (state) =>
-          res(state.value)
-        );
+        dispatch({ type: "inc", value: 7 }, (state) => res(state.value));
       })
     ).resolves.toBe(10));
 });
@@ -115,9 +115,7 @@ describe("Store handles error throwing reducers", () => {
   it("error inducing dispatch call", () =>
     expect(
       new Promise((res) => {
-        dispatch({ type: "inc", value: 5 }, undefined, (state) =>
-          res(state.value)
-        );
+        dispatch({ type: "inc", value: 5 }, (state) => res(state.value));
       })
     ).resolves.toBe(0));
 });
