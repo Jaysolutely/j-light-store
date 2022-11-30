@@ -143,7 +143,7 @@ export function createStore<S extends Record<key, unknown>>(
     reducer: reducer<CA, CS>,
     initialState: CS
   ): [CS, extendedDispatch<CA, CS>] {
-    if (name in props.reducers)
+    if (props.reducers.has(name))
       return [
         props.currentStoreState[name] as CS,
         extendDispatch<CA, CS>(name),
@@ -185,10 +185,7 @@ export function createStore<S extends Record<key, unknown>>(
   function extendDispatch<CA, CS>(
     defaultName: keyof S
   ): extendedDispatch<CA, CS> {
-    return (
-      action: CA,
-      callback?: dispatchCallback<CS>
-    ): void => {
+    return (action: CA, callback?: dispatchCallback<CS>): void => {
       dispatch<CA, CS>(action, defaultName, callback);
     };
   }
