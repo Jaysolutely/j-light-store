@@ -17,6 +17,7 @@ interface StoreProperties<S extends Record<key, unknown>> {
   callbackQueue: [key | undefined, dispatchCallback<unknown>][];
   delayed: boolean;
   effects: Map<key, void | (() => void)>;
+  onNextTick: (() => void)[];
   pendingEffects: Set<key>;
   callingSubscriptions: boolean;
 }
@@ -46,6 +47,7 @@ export function createStore<S extends Record<key, unknown>>(
     callbackQueue: [],
     delayed: false,
     effects: new Map(),
+    onNextTick: [],
     pendingEffects: new Set(),
     callingSubscriptions: false,
   };
@@ -201,12 +203,12 @@ export function createStore<S extends Record<key, unknown>>(
 
   function useEffect(
     name: key,
-    effect: () => void | (() => void),
+    effect: () => void,
     options: { delay?: boolean } = {}
   ): void {
     const { delay } = options;
     if (!props.callingSubscriptions) {
-      console.warn("useEffect called outside render loop, ignoring call.");
+      log("WARN", "useEffect called outside render loop, ignoring call.");
       return;
     }
     props.pendingEffects.add(name);
@@ -217,6 +219,14 @@ export function createStore<S extends Record<key, unknown>>(
         () => props.effects.set(name, effect()),
       ]);
     else props.effects.set(name, effect());
+  }
+
+  function nextTick(effect: () => void): void {
+    if (!props.callingSubscriptions) {
+      log("WARN", "nextTick called outside render loop, ignoring call.");
+      return;
+    }
+    props.callbackQueue.push([undefined, effect]);
   }
 
   function useState<T>(name: key, initialValue: T) {
@@ -235,5 +245,6 @@ export function createStore<S extends Record<key, unknown>>(
     subscribe,
     refresh,
     useState,
+    nextTick,
   };
 }
